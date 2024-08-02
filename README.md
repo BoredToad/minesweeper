@@ -1,1 +1,4 @@
-wip, currently on pause
+Usage:
+```sh
+./minesweeper [board_size] [difficulty]
+```

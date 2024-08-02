@@ -79,11 +79,12 @@ impl Square {
 
     pub fn reveal((y, x): (usize, usize), board: &mut Board) -> i32 {
         let square = &mut board[y][x];
+        square.revealed = true;
+
         if let Heat::Bomb = square.heat {
             return -1;
         }
 
-        square.revealed = true;
         let mut revealed = 1i32;
         if let Heat::Neighbours(_) = square.heat {
             return revealed;
@@ -150,6 +151,7 @@ impl Game {
     fn nc_init() {
         nc::initscr();
         nc::raw();
+        nc::curs_set(nc::CURSOR_VISIBILITY::CURSOR_INVISIBLE);
         nc::start_color();
         // basic pairs for revealed colors
         nc::init_pair(11, COLOR_WHITE, COLOR_BLACK);
@@ -181,7 +183,8 @@ impl Game {
             break;
         }
 
-        nc::endwin();
+        // nc::endwin();
+        self.render();
         println!("{}", exit_message);
     }
 
@@ -194,20 +197,19 @@ impl Game {
             }
             nc::addch('\n' as u32);
         }
-        nc::addstr(
-            format!(
-                "({}, {})\n CLEARED: {}, REMAINING: {}",
-                self.cursor.0,
-                self.cursor.1,
-                self.squares_revealed,
-                (self.board.len() * self.board[0].len()) as u32
-                    - self.bomb_count
-                    - self.squares_revealed
-            )
-            .as_str(),
-        ); // temp to show cursor pos
+        // nc::addstr(
+        //     format!(
+        //         "({}, {})\n CLEARED: {}, REMAINING: {}",
+        //         self.cursor.0,
+        //         self.cursor.1,
+        //         self.squares_revealed,
+        //         (self.board.len() * self.board[0].len()) as u32
+        //             - self.bomb_count
+        //             - self.squares_revealed
+        //     )
+        //     .as_str(),
+        // ); // for debugging
 
-        // nc::addstr(&self.debug_string());
         nc::refresh();
     }
 
@@ -219,7 +221,12 @@ impl Game {
 
         nc::addch(if square.revealed {
             match square.heat {
-                Heat::Bomb => 'X',
+                Heat::Bomb => {
+                    nc::attron(nc::COLOR_PAIR(9));
+                    nc::attron(nc::A_BLINK());
+                    nc::attron(nc::A_BOLD());
+                    'X'
+                }
                 Heat::None => {
                     nc::attron(nc::COLOR_PAIR(11));
                     ' '
@@ -290,10 +297,8 @@ enum ArgError {
 }
 
 fn main() -> Result<(), ArgError> {
-    match handle_args() {
-        Ok((board_size, bomb_frequency)) => Game::init(board_size, bomb_frequency).run(),
-        Err(e) => return Err(e),
-    }
+    let (board_size, bomb_frequency) = handle_args()?;
+    Game::init(board_size, bomb_frequency).run();
     Ok(())
 }
 
