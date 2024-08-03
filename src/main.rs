@@ -186,6 +186,7 @@ impl Game {
         // nc::endwin();
         self.render();
         println!("{}", exit_message);
+        nc::curs_set(nc::CURSOR_VISIBILITY::CURSOR_VISIBLE); // needed to restore to default
     }
 
     fn render(&self) {
